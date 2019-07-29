@@ -18,6 +18,16 @@
 
 * semtech 相关的一些开源代码，参考说明书，主要涉及到以下模块源代码  [picoGW_mcu](https://github.com/Lora-net/picoGW_mcu)、[picoGW_hal](https://github.com/Lora-net/picoGW_hal) 、[picoGW_packet_forwarder](https://github.com/Lora-net/picoGW_packet_forwarder)、[dfu-util](https://git.code.sf.net/p/dfu-util/dfu-util)
 
+3. 补充说明semtech 官方各个库的作用
+
+* packet_forwarder   包转发
+* lora_gateway 驱动 基于sx1301 concentrator + sx1257/sx1255 射频收发器
+* picoGW_hal  驱动USB通信 与 基于sx1308 concentrator + sx1257/sx1255 射频收发器 
+* picoGW_mcu  驱动 Picocell Gateway concentrator board. 
+* picoGW_packet_forwarder 运行在 Picocell Gateway上的包转发器
+
+* LoRaMac-node 终端节点
+* fuota  固件空中升级
 
 ## 树莓派镜像烧录和配置
 
@@ -186,7 +196,21 @@ ERROR: [main] failed to start the concentrator
 ```
 
 
+## 方案对比
 
+|厂商|方案类型|concentrator|网关|lora server| 参考开源框架|
+|-----|-----|-----|----|----|---|
+|锐米|室外网关|sx1301|树莓派|lora-server|1.lora_gateway+packet_fowarder 2.开源loraserver|
+|semtech|室内网关|sx1308|树莓派|？|picoGW_hal+picoGW_packet_forwarder+picoGW_mcu|
+
+1. 网关主机均选择树莓派2、3，建议选择树莓派提高开发效率
+2. concentrator的选择决定了树莓派上运行哪一种程序,锐米教程使用的是sx1301，和semtech提供的教程基本一致：[sx1301+树莓派](https://github.com/Lora-net/packet_forwarder/wiki/Use-with-Raspberry-Pi) ， semtech 使用sx1308(室内网关芯片)
+3. lora服务器锐米使用的是开源的方案，semtech暂时没体现lora server
+
+其他方案对比
+* [低成本的lora网关](https://github.com/CongducPham/LowCostLoRaGw) SX1272/76 +  Raspberry + Arduino 
+
+* [lora concentrator板开源](https://github.com/will127534/LoRa-concentrator) 开源的sx1301+sx125x lora 网关/集中板
 
 ## 网关设计
 
