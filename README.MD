@@ -528,3 +528,10 @@ ERROR: [main] failed to start the concentrator
 2、室外网关方案
 
 * sx1301+树莓派3+开源lora server
+
+
+
+## 参考链接
+
+(https://github.com/RAKWireless/RAK2245-RAK831-LoRaGateway-RPi-Raspbian-OS)
+(https://github.com/RAKWireless/rak_common_for_gateway)
