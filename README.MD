@@ -1,5 +1,313 @@
 # lora网关设计
 
+## UPDATE 2019.8.2 尝试了三种方案，均成功验证
+以上方案均采用 node: 锐米终端，concentrator：rak2245，网关：树莓派3b+，lora服务器：自建开源lora服务器。仅仅是**固件版本**的不同
+
+### 方案一 rak提供的树莓派3b+固件
+
+1. 先下载固件 [RAK2245_based_on_Raspbian_OS_V2.9.1_20190717](https://downloads.rakwireless.com/cn/LoRa/RAK2245-Pi-HAT/C%E5%9B%BA%E4%BB%B6/RAK2245_based_on_Raspbian_OS_V2.9.1_20190717.zip)
+![](https://i.loli.net/2019/08/03/NovBUwn9YDtmMOa.png)
+
+2. 使用 eTcher 烧录该镜像到SD卡中，具体过程参考 [etcher烧录镜像文档](http://docs.rakwireless.com/en/LoRa/RAK2245-Pi-HAT/Tool/How_to_write_LoRa_Gatew ay_Image_to_Micro_SD.pdf)
+![](https://i.loli.net/2019/08/03/VPTX7JrRC8npUxO.png)
+
+3. 等待烧录完成，退出软件。拔掉sdcard，接上树莓派。按照教程[LoRaWAN树莓派网关使用指南](https://downloads.rakwireless.com/cn/LoRa/LoRaWAN%E7%BD%91%E5%85%B3%E5%85%A5%E9%97%A8%E5%BC%80%E5%8F%91%E5%A5%97%E4%BB%B6/%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97/LoRaWAN%E6%A0%91%E8%8E%93%E6%B4%BE%E7%BD%91%E5%85%B3%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97.pdf)设置好参数，然后设置接入 lora server，填写自建的地址，保存即可。
+
+4. 此过程比较简单，根据提示设置即可。
+
+### 方案二 lora server 开源项目提供的 lora gateway os 固件
+
+此固件和上面的rak固件很像，不过设置方面没有rak那么好用，需要做一些额外的设置即可
+
+1. 下载最新 gateway os full 固件[lora-gateway-os-full](https://artifacts.loraserver.io/downloads/lora-gateway-os/raspberrypi/raspberrypi3/3.0.0test1/lora-gateway-os-full-raspberrypi3--20190714105631.sdimg.gz)
+![](https://i.loli.net/2019/08/03/RB6wEfuyCDYKvZW.png)
+
+- 虽然镜像是给树莓派3准备的，但是亲测树莓派3b+ 也是可以正常运行的
+- 镜像分为 lora-gateway-os-base 和 lora-gateway-os-full 版本，考虑到后者在功能上完全兼容前者，并且内置了lora 服务器和 lora 应用服务器，更加方便调试及减少了搭建服务器的成本。因此选用lora-gateway-os-full 版本镜像
+
+2. 使用 eTcher 烧录该镜像到SD卡中，同上，比较简单。
+
+3. sd卡插入树莓派，开机启动.参考教程[配置教程](https://www.loraserver.io/lora-gateway-os/use/getting-started/)。
+![](https://www.loraserver.io/lora-gateway-os/img/gateway-config.png)
+
+4. 默认是开启ssh的，且用户名和密码均为 admin、admin。由于该固件为国外开发的，所以找不到 CN-470频段，不过也没有关系，我们可以手动去修该 global_conf.json文件来实现 支持CN-470频段。
+
+用以下内容替换原有的global_confi.json文件，注意需要设置最后面的 "server_address" 值为 自建的lora服务器或者是 127.0.0.1 本地内置lora服务器。
+
+```json
+{
+	"SX1301_conf": {
+		"lorawan_public": true,
+		"clksrc": 1,
+		"clksrc_desc": "radio_1 provides clock to concentrator for most devices except MultiTech. For MultiTech set to 0.",
+		"antenna_gain": 0,
+		"antenna_gain_desc": "antenna gain, in dBi",
+		"radio_0": {
+			"enable": true,
+			"type": "SX1255",
+			"freq": 486600000,
+			"rssi_offset": -176.0,
+			"tx_enable": true,
+			"tx_freq_min": 470000000,
+			"tx_freq_max": 510000000
+		},
+		"radio_1": {
+			"enable": true,
+			"type": "SX1255",
+			"freq": 487400000,
+			"rssi_offset": -176.0,
+			"tx_enable": false
+		},
+		"chan_multiSF_0": {
+			"desc": "Lora MAC, 125kHz, all SF, 487.1 MHz",
+			"enable": true,
+			"radio": 1,
+			"if": -300000
+		},
+		"chan_multiSF_1": {
+			"desc": "Lora MAC, 125kHz, all SF, 487.3 MHz",
+			"enable": true,
+			"radio": 1,
+			"if": -100000
+		},
+		"chan_multiSF_2": {
+			"desc": "Lora MAC, 125kHz, all SF, 487.5 MHz",
+			"enable": true,
+			"radio": 1,
+			"if": 100000
+		},
+		"chan_multiSF_3": {
+			"desc": "Lora MAC, 125kHz, all SF, 487.7 MHz",
+			"enable": true,
+			"radio": 1,
+			"if": 300000
+		},
+		"chan_multiSF_4": {
+			"desc": "Lora MAC, 125kHz, all SF, 486.3 MHz",
+			"enable": true,
+			"radio": 0,
+			"if": -300000
+		},
+		"chan_multiSF_5": {
+			"desc": "Lora MAC, 125kHz, all SF, 486.5 MHz",
+			"enable": true,
+			"radio": 0,
+			"if": -100000
+		},
+		"chan_multiSF_6": {
+			"desc": "Lora MAC, 125kHz, all SF, 486.7 MHz",
+			"enable": true,
+			"radio": 0,
+			"if": 100000
+		},
+		"chan_multiSF_7": {
+			"desc": "Lora MAC, 125kHz, all SF, 486.9 MHz",
+			"enable": true,
+			"radio": 0,
+			"if": 300000
+		},
+		"chan_Lora_std": {
+			"desc": "disabled",
+			"enable": false
+		},
+		"chan_FSK": {
+			"desc": "disabled",
+			"enable": false
+		},
+		"tx_lut_0": {
+			"desc": "TX gain table, index 0",
+			"pa_gain": 0,
+			"mix_gain": 8,
+			"rf_power": -6,
+			"dig_gain": 0
+		},
+		"tx_lut_1": {
+			"desc": "TX gain table, index 1",
+			"pa_gain": 0,
+			"mix_gain": 10,
+			"rf_power": -3,
+			"dig_gain": 0
+		},
+		"tx_lut_2": {
+			"desc": "TX gain table, index 2",
+			"pa_gain": 0,
+			"mix_gain": 12,
+			"rf_power": 0,
+			"dig_gain": 0
+		},
+		"tx_lut_3": {
+			"desc": "TX gain table, index 3",
+			"pa_gain": 1,
+			"mix_gain": 8,
+			"rf_power": 3,
+			"dig_gain": 0
+		},
+		"tx_lut_4": {
+			"desc": "TX gain table, index 4",
+			"pa_gain": 1,
+			"mix_gain": 10,
+			"rf_power": 6,
+			"dig_gain": 0
+		},
+		"tx_lut_5": {
+			"desc": "TX gain table, index 5",
+			"pa_gain": 1,
+			"mix_gain": 12,
+			"rf_power": 10,
+			"dig_gain": 0
+		},
+		"tx_lut_6": {
+			"desc": "TX gain table, index 6",
+			"pa_gain": 1,
+			"mix_gain": 13,
+			"rf_power": 11,
+			"dig_gain": 0
+		},
+		"tx_lut_7": {
+			"desc": "TX gain table, index 7",
+			"pa_gain": 2,
+			"mix_gain": 9,
+			"rf_power": 12,
+			"dig_gain": 0
+		},
+		"tx_lut_8": {
+			"desc": "TX gain table, index 8",
+			"pa_gain": 1,
+			"mix_gain": 15,
+			"rf_power": 13,
+			"dig_gain": 0
+		},
+		"tx_lut_9": {
+			"desc": "TX gain table, index 9",
+			"pa_gain": 2,
+			"mix_gain": 10,
+			"rf_power": 14,
+			"dig_gain": 0
+		},
+		"tx_lut_10": {
+			"desc": "TX gain table, index 10",
+			"pa_gain": 2,
+			"mix_gain": 11,
+			"rf_power": 16,
+			"dig_gain": 0
+		},
+		"tx_lut_11": {
+			"desc": "TX gain table, index 11",
+			"pa_gain": 3,
+			"mix_gain": 9,
+			"rf_power": 20,
+			"dig_gain": 0
+		},
+		"tx_lut_12": {
+			"desc": "TX gain table, index 12",
+			"pa_gain": 3,
+			"mix_gain": 10,
+			"rf_power": 23,
+			"dig_gain": 0
+		},
+		"tx_lut_13": {
+			"desc": "TX gain table, index 13",
+			"pa_gain": 3,
+			"mix_gain": 11,
+			"rf_power": 25,
+			"dig_gain": 0
+		},
+		"tx_lut_14": {
+			"desc": "TX gain table, index 14",
+			"pa_gain": 3,
+			"mix_gain": 12,
+			"rf_power": 26,
+			"dig_gain": 0
+		},
+		"tx_lut_15": {
+			"desc": "TX gain table, index 15",
+			"pa_gain": 3,
+			"mix_gain": 14,
+			"rf_power": 27,
+			"dig_gain": 0
+		}
+	},
+	"gateway_conf": {
+		"gateway_ID": "0000000000000000",
+		/* change with default server address/ports, or overwrite in local_conf.json */
+		"server_address": "自建服务器地址",
+		"serv_port_up": 1700,
+		"serv_port_down": 1700,
+		/* adjust the following parameters for your network */
+		"keepalive_interval": 10,
+		"stat_interval": 30,
+		"push_timeout_ms": 100,
+		/* forward only valid packets */
+		"forward_crc_valid": true,
+		"forward_crc_error": false,
+		"forward_crc_disabled": false,
+		/* gps enable */
+		"gps": true,
+		"gps_tty_path": "/dev/ttyAMA0",
+		"fake_gps": false,
+		"ref_latitude": 10,
+		"ref_longitude": 20,
+		"ref_altitude": -1,
+		"autoquit_threshold": 6
+	}
+}
+```
+5. 在 gateway-config 中重启各个模块即可。
+
+
+
+### 方案三  树莓派3b+官方固件 + semtech 软件
+
+1. 下载一个树莓派3b+的官方固件，我使用的是 [Raspbian 2019-07-10 3GB Buster LITE (rpi3+4.img.zip)](https://www.raspberrypi.org/downloads/raspbian/)
+
+2. 不需要解压，烧录同样可以使用etcher去烧录，比较简单
+
+3. 烧录完成后，接着在boot分区的根目录下新建一个 ssh空白文件，该文件没有后缀名！！！。因为官方默认禁用ssh连接，新建该空白ssh文件可以实现启动ssh。
+
+4. sd卡插入树莓派，开机启动，默认用户名和密码分别为：pi、raspberry。
+
+- ssh进入终端，输入 `sudo raspi-config` 命令进入配置页面
+
+- ![](https://i.loli.net/2019/08/03/QewhHLn4Itb28lB.png)
+
+- ![](https://i.loli.net/2019/08/03/2cyCFRBZ4WTpv1x.png)
+
+- 依次在 `Interfacing Options` 选项中开启 SPI、I2C、SSH，在 `Advanced Options` 选项中 开启 `Expanded Filesystem...`。重启之后再ssh重新连接。
+![](https://i.loli.net/2019/08/03/LjrKcIozinH9SwG.png)
+![](https://i.loli.net/2019/08/03/rVSljTJoI4q5yPv.png)
+
+5. 下载并编译软件，使用修改后的semtech软件。
+
+```bash
+# home/pi目录下
+mkdir lora-net && cd lora-net
+# 下载修改后的源代码
+git clone ssh://git@49.4.68.29:2222/fangkai/lora-net.git
+
+# 编译lora-gateway
+# 进入网关目录 
+cd lora-gateway
+# 编译
+make clean all
+
+# 进入packet_forwarder
+cd ..
+cd packet_forwarder/
+# 编译packet_forwarder
+make clean all
+
+# 接着进入lora_pkt_fwd/目录
+# 修改里面的local_conf.json中的 网关eui，设置成任意或者设置成网卡的mac地址也可以，这个随意
+# 运行使用sudo bash start sh
+sudo bash start.sh
+
+```
+![](https://i.loli.net/2019/08/03/a5EVMADkTNf9neQ.png)
+![](https://i.loli.net/2019/08/03/uOiXS2vL4QhYTpr.png)
+
+运行成功！
+
+
 ## 资料阅读
 
 ### 锐米资料
@@ -139,7 +447,7 @@ cd ~/lora-net/packet_forwarder/lora_pkt_fwd/
 sudo ./lora_pkt_fwd
 ```
 
-##  未连接concentrator 的情况下运行的日志
+## 未连接concentrator 的情况下运行的日志
 
 网上解释说未连接concentrator，可能是没有连接sx1301造成的
 [https://www.thethingsnetwork.org/forum/t/error-main-failed-to-start-the-concentrator/5856/38]
@@ -195,7 +503,6 @@ ERROR: [main] failed to start the concentrator
 
 ```
 
-
 ## 方案对比
 
 |厂商|方案类型|concentrator|网关|lora server| 参考开源框架|
@@ -214,5 +521,10 @@ ERROR: [main] failed to start the concentrator
 
 ## 网关设计
 
-待补充
+1、室内网关方案
 
+* sx1308+MCU+树莓派3+开源lora server
+
+2、室外网关方案
+
+* sx1301+树莓派3+开源lora server
