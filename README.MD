@@ -1,5 +1,9 @@
 # lora网关设计
 
+## UPDATE 2019.8.6
+
+[WDT功能已验证](https://github.com/hack-fang/safety-phaseII/blob/master/WDT.md)
+
 ## UPDATE 2019.8.2 尝试了三种方案，均成功验证
 以上方案均采用 node: 锐米终端，concentrator：rak2245，网关：树莓派3b+，lora服务器：自建开源lora服务器。仅仅是**固件版本**的不同
 
